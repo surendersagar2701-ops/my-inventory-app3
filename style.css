@@ -1,0 +1,84 @@
+/* ===== SECTION HEADER ACTIONS ===== */
+.section-header-actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.section-header-actions button {
+    background: none;
+    border: none;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.section-header-actions .rename-btn {
+    color: #60a5fa;
+}
+
+.section-header-actions .rename-btn:hover {
+    background: rgba(59,130,246,0.1);
+}
+
+.section-header-actions .delete-btn {
+    color: #f87171;
+}
+
+.section-header-actions .delete-btn:hover {
+    background: rgba(239,68,68,0.1);
+}
+
+.section-header-actions button:active {
+    transform: scale(0.9);
+}
+
+/* ===== SECTION CARD - UPDATED ===== */
+.section-header {
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.section-name {
+    font-weight: 700;
+    font-size: 15px;
+    color: #ffffff;
+    cursor: pointer;
+}
+
+.section-name:hover {
+    color: #818cf8;
+}
+
+.section-count {
+    font-size: 12px;
+    color: #6b7280;
+    background: rgba(255,255,255,0.04);
+    padding: 2px 12px;
+    border-radius: 20px;
+}
+
+/* ===== MODAL - RENAME SECTION ===== */
+.rename-section-input {
+    font-size: 18px;
+    font-weight: 700;
+    text-align: center;
+    padding: 14px;
+    border: 2px solid rgba(99,102,241,0.2);
+    border-radius: 12px;
+    background: rgba(255,255,255,0.04);
+    color: #fff;
+    outline: none;
+    width: 100%;
+}
+
+.rename-section-input:focus {
+    border-color: rgba(99,102,241,0.5);
+}

@@ -1,16 +1,14 @@
 /* ========================================
-   SMART INVENTORY v2.0 - Complete Management
+   SMART INVENTORY APP - COMPLETE
    ======================================== */
 
 let products = JSON.parse(localStorage.getItem('products')) || [];
 let sections = JSON.parse(localStorage.getItem('sections')) || [];
 let bills = JSON.parse(localStorage.getItem('bills')) || [];
 let currentBill = [];
-
-// ===== DESIGN TEMPLATES =====
 let designTemplates = JSON.parse(localStorage.getItem('designTemplates')) || [];
 let selectedSareeColor = null;
-let selectedSareeImage = null;
+let templateImageData = null;
 
 // ==========================================
 // 1. NAVIGATION
@@ -23,7 +21,7 @@ function switchPage(page) {
     document.querySelector(`.nav-item[onclick="switchPage('${page}')"]`).classList.add('active');
     
     if (page === 'inventory') renderInventory();
-    if (page === 'aiSet') { renderDesignTemplates(); updateUI(); }
+    if (page === 'aiSet') { renderDesignTemplates(); }
     if (page === 'home') updateUI();
     if (page === 'bill') renderBillHistory();
 }
@@ -35,7 +33,6 @@ function switchPage(page) {
 function openModal(type, data = null) {
     const modal = document.getElementById('modal');
     const content = document.getElementById('modalContent');
-    
     let html = '';
     
     switch(type) {
@@ -45,7 +42,7 @@ function openModal(type, data = null) {
                 <h3 class="modal-title">📁 Create New Section</h3>
                 <div class="form-group">
                     <label>Section Name</label>
-                    <input id="sectionNameInput" placeholder="e.g., Bangles, Sets" class="form-input">
+                    <input id="sectionNameInput" placeholder="e.g., Bangles, Rings" class="form-input">
                 </div>
                 <button onclick="addSection()" class="btn-gradient">Create Section</button>
             `;
@@ -72,7 +69,7 @@ function openModal(type, data = null) {
             const sectionOptions = sections.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
             html = `
                 <button class="modal-close" onclick="closeModal()">✕</button>
-                <h3 class="modal-title">➕ Add Bangle/Product</h3>
+                <h3 class="modal-title">➕ Add New Product</h3>
                 <div class="form-group">
                     <label>Section</label>
                     <select id="productSection" class="form-input">
@@ -82,7 +79,7 @@ function openModal(type, data = null) {
                 </div>
                 <div class="form-group">
                     <label>Product Name</label>
-                    <input id="productName" placeholder="e.g., Gold Bangle" class="form-input">
+                    <input id="productName" placeholder="Product name" class="form-input">
                 </div>
                 <div class="form-group">
                     <label>SKU</label>
@@ -107,7 +104,7 @@ function openModal(type, data = null) {
                     <input id="productSize" placeholder="e.g., M, L, 18" class="form-input">
                 </div>
                 <div class="form-group">
-                    <label>Price (₹)</label>
+                    <label>Selling Price (₹)</label>
                     <input id="productPrice" type="number" placeholder="0" class="form-input">
                 </div>
                 <div class="form-group">
@@ -132,7 +129,7 @@ function openModal(type, data = null) {
                 </div>
                 <div class="form-group">
                     <label>Products</label>
-                    <textarea id="bulkProducts" rows="6" placeholder="Gold Bangle,BGL-001,Gold,M,499,10&#10;Red Bangle,BGL-002,Red,L,399,8" style="width:100%;padding:12px;border:1px solid rgba(255,255,255,0.06);border-radius:12px;background:rgba(255,255,255,0.04);color:#fff;font-family:monospace;font-size:14px;resize:vertical"></textarea>
+                    <textarea id="bulkProducts" rows="6" placeholder="Gold Bangle,BGL-001,Gold,M,499,10" style="width:100%;padding:12px;border:1px solid rgba(255,255,255,0.06);border-radius:12px;background:rgba(255,255,255,0.04);color:#fff;font-family:monospace;font-size:14px;resize:vertical"></textarea>
                 </div>
                 <button onclick="bulkAdd()" class="btn-gradient">📥 Add All</button>
             `;
@@ -150,12 +147,10 @@ function openModal(type, data = null) {
             html = `
                 <button class="modal-close" onclick="closeModal()">✕</button>
                 <h3 class="modal-title">${isEdit ? '✏️ Edit' : '📐 Add'} Design Template</h3>
-                <p style="color:#6b7280;font-size:13px;margin-bottom:12px">
-                    ${isEdit ? 'Update' : 'Upload a'} design pattern showing bangle arrangement
-                </p>
+                <p style="color:#6b7280;font-size:13px;margin-bottom:12px">${isEdit ? 'Update' : 'Upload a'} design pattern showing bangle arrangement</p>
                 <div class="form-group">
                     <label>Template Name *</label>
-                    <input id="templateName" value="${tName}" placeholder="e.g., Round Set, Long Set, Heavy Set" class="form-input">
+                    <input id="templateName" value="${tName}" placeholder="e.g., Round Set, Long Set" class="form-input">
                 </div>
                 <div class="form-group">
                     <label>Description</label>
@@ -184,77 +179,67 @@ function openModal(type, data = null) {
             `;
             break;
             
+        case 'aiSet':
+            html = `
+                <button class="modal-close" onclick="closeModal()">✕</button>
+                <h3 class="modal-title">🤖 AI Set Maker</h3>
+                <p style="color:#6b7280;font-size:13px;margin-bottom:12px">Select saree color to generate matching sets</p>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+                    <div class="saree-color-option" onclick="selectSareeColor('Red')" style="background:#ef4444">🔴 Red</div>
+                    <div class="saree-color-option" onclick="selectSareeColor('Blue')" style="background:#3b82f6">🔵 Blue</div>
+                    <div class="saree-color-option" onclick="selectSareeColor('Gold')" style="background:#f59e0b">🟡 Gold</div>
+                    <div class="saree-color-option" onclick="selectSareeColor('Green')" style="background:#22c55e">🟢 Green</div>
+                    <div class="saree-color-option" onclick="selectSareeColor('Pink')" style="background:#ec4899">🩷 Pink</div>
+                </div>
+                <button onclick="generateAISets()" class="btn-gradient">⚡ Generate Sets</button>
+                <div id="modalGeneratedSets" style="margin-top:12px"></div>
+            `;
+            break;
+            
         default:
             html = `<button class="modal-close" onclick="closeModal()">✕</button><p>Unknown</p>`;
     }
     
     content.innerHTML = html;
     modal.classList.add('show');
-    
-    if (type === 'editTemplate' && data) {
-        const t = designTemplates.find(tm => tm.id === data);
-        if (t && t.image) {
-            window._editTemplateImage = t.image;
-        }
-    }
 }
 
 function closeModal() {
     document.getElementById('modal').classList.remove('show');
-    window._editTemplateImage = null;
+    templateImageData = null;
 }
 
 // ==========================================
-// 3. SECTIONS - FULL MANAGEMENT
+// 3. SECTIONS
 // ==========================================
 
 function addSection() {
     const name = document.getElementById('sectionNameInput').value.trim();
     if (!name) { alert('Enter section name'); return; }
-    
-    if (sections.some(s => s.name.toLowerCase() === name.toLowerCase())) {
-        alert('⚠️ Section with this name already exists!');
-        return;
-    }
-    
     sections.push({ id: 'SEC-' + Date.now(), name: name });
     localStorage.setItem('sections', JSON.stringify(sections));
     closeModal();
     updateUI();
-    alert('✅ Section "' + name + '" created!');
 }
 
 function renameSection(id) {
     const newName = document.getElementById('renameSectionInput').value.trim();
-    if (!newName) { alert('Enter new section name'); return; }
-    
-    if (sections.some(s => s.name.toLowerCase() === newName.toLowerCase() && s.id !== id)) {
-        alert('⚠️ Section with this name already exists!');
-        return;
-    }
-    
+    if (!newName) { alert('Enter new name'); return; }
     const section = sections.find(s => s.id === id);
-    if (!section) { alert('Section not found!'); return; }
-    
-    const oldName = section.name;
+    if (!section) return;
     section.name = newName;
     localStorage.setItem('sections', JSON.stringify(sections));
     closeModal();
     updateUI();
-    alert('✅ Section renamed from "' + oldName + '" to "' + newName + '"');
 }
 
 function deleteSection(id) {
-    if (!confirm('⚠️ Delete this section and ALL products in it?')) return;
-    
-    const section = sections.find(s => s.id === id);
+    if (!confirm('Delete section and all products?')) return;
     products = products.filter(p => p.sectionId !== id);
     sections = sections.filter(s => s.id !== id);
-    
     localStorage.setItem('sections', JSON.stringify(sections));
     localStorage.setItem('products', JSON.stringify(products));
     updateUI();
-    alert('✅ Section "' + (section?.name || '') + '" deleted!');
 }
 
 function openRenameSection(id) {
@@ -262,485 +247,7 @@ function openRenameSection(id) {
 }
 
 // ==========================================
-// 4. DESIGN TEMPLATES - FULL CRUD
-// ==========================================
-
-let templateImageData = null;
-
-function handleTemplateImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        templateImageData = e.target.result;
-        document.getElementById('templateImagePreview').innerHTML = `
-            <div class="image-preview-item">
-                <img src="${e.target.result}" alt="Template">
-                <button class="remove-img" onclick="removeTemplateImage()">✕</button>
-            </div>
-        `;
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeTemplateImage() {
-    templateImageData = null;
-    document.getElementById('templateImagePreview').innerHTML = '';
-    document.getElementById('templateImageInput').value = '';
-}
-
-function saveDesignTemplate() {
-    const name = document.getElementById('templateName').value.trim();
-    const desc = document.getElementById('templateDesc').value.trim();
-    const positionsText = document.getElementById('templatePositions').value.trim();
-    
-    if (!name) { alert('Enter template name'); return; }
-    if (!templateImageData) { alert('Upload template image'); return; }
-    
-    const positions = positionsText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-    if (positions.length === 0) {
-        alert('Enter valid positions (e.g., 1,2,3,4)');
-        return;
-    }
-    
-    const template = {
-        id: 'TMP-' + Date.now(),
-        name: name,
-        desc: desc || 'Bangle Set Pattern',
-        positions: positions,
-        image: templateImageData,
-        created: new Date().toISOString()
-    };
-    
-    designTemplates.push(template);
-    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
-    templateImageData = null;
-    closeModal();
-    renderDesignTemplates();
-    updateTemplateCount();
-    alert('✅ Template "' + name + '" added successfully!');
-}
-
-function editTemplate(id) {
-    openModal('editTemplate', id);
-}
-
-function saveEditTemplate(id) {
-    const template = designTemplates.find(t => t.id === id);
-    if (!template) { alert('Template not found!'); return; }
-    
-    const name = document.getElementById('templateName').value.trim();
-    const desc = document.getElementById('templateDesc').value.trim();
-    const positionsText = document.getElementById('templatePositions').value.trim();
-    
-    if (!name) { alert('Enter template name'); return; }
-    
-    const positions = positionsText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
-    if (positions.length === 0) {
-        alert('Enter valid positions (e.g., 1,2,3,4)');
-        return;
-    }
-    
-    template.name = name;
-    template.desc = desc || 'Bangle Set Pattern';
-    template.positions = positions;
-    
-    if (templateImageData) {
-        template.image = templateImageData;
-        templateImageData = null;
-    }
-    
-    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
-    closeModal();
-    renderDesignTemplates();
-    updateTemplateCount();
-    alert('✅ Template "' + name + '" updated successfully!');
-}
-
-function deleteTemplate(id) {
-    if (!confirm('⚠️ Delete this template?')) return;
-    const template = designTemplates.find(t => t.id === id);
-    designTemplates = designTemplates.filter(t => t.id !== id);
-    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
-    renderDesignTemplates();
-    updateTemplateCount();
-    alert('✅ Template "' + (template?.name || '') + '" deleted!');
-}
-
-function renderDesignTemplates() {
-    const container = document.getElementById('designTemplates');
-    if (!container) return;
-    
-    updateTemplateCount();
-    
-    if (designTemplates.length === 0) {
-        container.innerHTML = `
-            <div class="empty-templates">
-                <div class="empty-icon">📐</div>
-                <div class="empty-title">No design templates</div>
-                <div class="empty-desc">Add your first design pattern by clicking "+ Add"</div>
-                <button onclick="openModal('addTemplate')" class="btn-primary" style="margin-top:10px;padding:8px 24px;font-size:13px">
-                    + Add Template
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = designTemplates.map((t, idx) => `
-        <div class="template-card">
-            <div class="template-image">
-                <img src="${t.image}" alt="${t.name}">
-            </div>
-            <div class="template-name">${t.name}</div>
-            <div class="template-desc">${t.desc || ''}</div>
-            <div class="template-position-badge">${t.positions.length} bangles</div>
-            <div class="template-actions">
-                <button class="edit-btn" onclick="editTemplate('${t.id}')">✏️ Edit</button>
-                <button class="delete-btn" onclick="deleteTemplate('${t.id}')">🗑️</button>
-            </div>
-            <div style="font-size:9px;color:#6b7280;margin-top:4px">#${idx + 1}</div>
-        </div>
-    `).join('');
-}
-
-function updateTemplateCount() {
-    const countEl = document.getElementById('templateCount');
-    if (countEl) {
-        countEl.textContent = designTemplates.length + ' templates';
-    }
-}
-
-function addDesignTemplate() {
-    openModal('addTemplate');
-}
-
-// ==========================================
-// 5. SAREE COLOR SELECTION
-// ==========================================
-
-function selectSareeColor(color) {
-    selectedSareeColor = color;
-    selectedSareeImage = null;
-    document.getElementById('selectedSareeColor').textContent = color + ' 🔴';
-    document.querySelectorAll('.saree-color-option').forEach(el => {
-        el.classList.remove('selected');
-        if (el.textContent.includes(color)) el.classList.add('selected');
-    });
-    document.getElementById('sareeImagePreview').innerHTML = '';
-}
-
-function handleSareeImage(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        selectedSareeImage = e.target.result;
-        selectedSareeColor = null;
-        document.getElementById('selectedSareeColor').textContent = 'Image Uploaded 🖼️';
-        document.querySelectorAll('.saree-color-option').forEach(el => el.classList.remove('selected'));
-        document.getElementById('sareeImagePreview').innerHTML = `
-            <div class="image-preview-item">
-                <img src="${e.target.result}" alt="Saree" style="width:100%;height:100%;object-fit:cover">
-            </div>
-        `;
-    };
-    reader.readAsDataURL(file);
-}
-
-// ==========================================
-// 6. AI SET GENERATOR
-// ==========================================
-
-function generateAISets() {
-    const container = document.getElementById('generatedSets');
-    
-    if (!selectedSareeColor && !selectedSareeImage) {
-        alert('⚠️ Please select a saree color or upload saree image first!');
-        return;
-    }
-    
-    let targetColor = selectedSareeColor;
-    if (selectedSareeImage && !targetColor) {
-        targetColor = prompt('Enter saree color from image (e.g., Red, Blue, Gold):');
-        if (!targetColor) { alert('Please enter a color'); return; }
-        selectedSareeColor = targetColor;
-    }
-    
-    const matchingProducts = products.filter(p => 
-        p.color && p.color.toLowerCase() === targetColor.toLowerCase() && p.stock > 0
-    );
-    
-    if (matchingProducts.length === 0) {
-        container.innerHTML = `
-            <div class="card" style="text-align:center;padding:30px;border:2px solid rgba(239,68,68,0.3)">
-                <div style="font-size:48px;margin-bottom:10px">😅</div>
-                <h4 style="color:#f87171">No matching bangles found!</h4>
-                <p style="color:#6b7280;font-size:13px;margin-top:8px">
-                    Color: <strong>${targetColor}</strong><br>
-                    Please add bangles of this color to inventory.
-                </p>
-                <button onclick="openModal('addProduct')" class="btn-gradient" style="margin-top:12px;padding:10px 30px;font-size:13px">
-                    ➕ Add ${targetColor} Bangles
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    if (designTemplates.length === 0) {
-        container.innerHTML = `
-            <div class="card" style="text-align:center;padding:30px;border:2px solid rgba(239,68,68,0.3)">
-                <div style="font-size:48px;margin-bottom:10px">📐</div>
-                <h4 style="color:#f87171">No design templates found!</h4>
-                <p style="color:#6b7280;font-size:13px;margin-top:8px">
-                    Please add at least 1 design template first.
-                </p>
-                <button onclick="openModal('addTemplate')" class="btn-gradient" style="margin-top:12px;padding:10px 30px;font-size:13px">
-                    📐 Add Design Template
-                </button>
-            </div>
-        `;
-        return;
-    }
-    
-    // Generate sets for each template
-    let setsHtml = '';
-    let setCount = 0;
-    let generatedSetsData = [];
-    
-    designTemplates.forEach((template, idx) => {
-        const totalStock = matchingProducts.reduce((sum, p) => sum + p.stock, 0);
-        const piecesPerSet = template.positions.length || 8;
-        const maxSets = Math.floor(totalStock / piecesPerSet);
-        
-        if (maxSets < 1) return;
-        setCount++;
-        
-        const selectedBangles = [];
-        let stockCopy = matchingProducts.map(p => ({...p}));
-        
-        for (let i = 0; i < piecesPerSet; i++) {
-            const available = stockCopy.filter(p => p.stock > 0);
-            if (available.length === 0) break;
-            const pick = available[Math.floor(Math.random() * available.length)];
-            const idx2 = stockCopy.indexOf(pick);
-            if (idx2 > -1) {
-                stockCopy[idx2].stock--;
-                selectedBangles.push(pick);
-            }
-        }
-        
-        if (selectedBangles.length < 2) return;
-        
-        const setPrice = selectedBangles.reduce((sum, b) => sum + (b.price || 0), 0) + 100;
-        
-        generatedSetsData.push({
-            template: template,
-            selectedBangles: selectedBangles,
-            maxSets: maxSets,
-            setPrice: setPrice,
-            targetColor: targetColor
-        });
-        
-        setsHtml += `
-            <div class="set-result-card">
-                <div class="set-result-header">
-                    <span class="set-result-name">🎨 ${template.name} - ${targetColor} Collection</span>
-                    <span class="set-result-badge">${maxSets} sets</span>
-                </div>
-                
-                <div class="set-result-preview">
-                    ${selectedBangles.map((b, i) => `
-                        <div class="bangle-item" style="background:${getColorHex(b.color)}">
-                            <span style="font-size:14px;color:#fff;font-weight:700">${i+1}</span>
-                            <div class="bangle-label">${b.name}</div>
-                        </div>
-                    `).join('')}
-                </div>
-                
-                <div style="margin:8px 0;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#6b7280;text-align:center">
-                    ${template.desc} • ${selectedBangles.length} pieces • Pattern: ${template.name}
-                </div>
-                
-                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
-                    <div>
-                        <div style="font-size:12px;color:#6b7280">Set Price</div>
-                        <div style="font-size:20px;font-weight:800;color:#818cf8">₹${setPrice}</div>
-                    </div>
-                    <div style="display:flex;gap:8px">
-                        <button onclick="previewSet(${idx})" class="btn-secondary" style="padding:8px 16px;font-size:12px">👁️ Preview</button>
-                        <button onclick="addSetToInventory(${idx})" class="btn-add-set">➕ Add Set</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    
-    if (setCount === 0) {
-        container.innerHTML = `
-            <div class="card" style="text-align:center;padding:30px">
-                <div style="font-size:48px;margin-bottom:10px">😅</div>
-                <h4 style="color:#f87171">Not enough stock!</h4>
-                <p style="color:#6b7280;font-size:13px;margin-top:8px">
-                    Need at least ${designTemplates[0]?.positions?.length || 8} bangles of ${targetColor} color.
-                </p>
-            </div>
-        `;
-        return;
-    }
-    
-    container.innerHTML = `
-        <div style="margin:15px 0 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-            <span style="font-size:14px;color:#6b7280">🎯 Found ${setCount} matching sets from ${designTemplates.length} templates</span>
-            <button onclick="addAllSets()" class="btn-success" style="padding:8px 20px;font-size:13px;width:auto">
-                📦 Add All Sets
-            </button>
-        </div>
-        ${setsHtml}
-    `;
-    
-    window._generatedSetsData = {
-        templates: designTemplates,
-        color: targetColor,
-        products: matchingProducts,
-        generatedData: generatedSetsData,
-        setsHtml: setsHtml
-    };
-}
-
-function getColorHex(color) {
-    const map = {
-        'Red':'#ef4444','Blue':'#3b82f6','Gold':'#f59e0b',
-        'Green':'#22c55e','Silver':'#9ca3af','Pink':'#ec4899',
-        'Purple':'#8b5cf6','Orange':'#f97316','Yellow':'#eab308'
-    };
-    return map[color] || '#6b7280';
-}
-
-function addSetToInventory(templateIdx) {
-    const data = window._generatedSetsData;
-    if (!data || !data.generatedData || !data.generatedData[templateIdx]) {
-        alert('Please generate sets first!');
-        return;
-    }
-    
-    const setData = data.generatedData[templateIdx];
-    const template = setData.template;
-    
-    let setSection = sections.find(s => s.name === 'AI Sets');
-    if (!setSection) {
-        setSection = { id: 'SEC-AI-' + Date.now(), name: 'AI Sets' };
-        sections.push(setSection);
-        localStorage.setItem('sections', JSON.stringify(sections));
-    }
-    
-    const product = {
-        id: 'SET-' + Date.now(),
-        sectionId: setSection.id,
-        name: template.name + ' (' + data.color + ' Set)',
-        sku: 'SET-' + Date.now().toString().slice(-6),
-        color: data.color,
-        size: 'Set',
-        price: setData.setPrice || 499,
-        stock: 1,
-        purchase: 0,
-        isSet: true,
-        templateId: template.id,
-        templateImage: template.image,
-        setDetails: {
-            pieces: template.positions.length,
-            pattern: template.name,
-            description: template.desc,
-            sareeColor: data.color,
-            bangles: setData.selectedBangles.map(b => b.name)
-        }
-    };
-    
-    products.push(product);
-    localStorage.setItem('products', JSON.stringify(products));
-    updateUI();
-    alert('✅ Added "' + product.name + '" to inventory!');
-}
-
-function addAllSets() {
-    const data = window._generatedSetsData;
-    if (!data || !data.generatedData) {
-        alert('Please generate sets first!');
-        return;
-    }
-    
-    let added = 0;
-    data.generatedData.forEach((setData, idx) => {
-        const template = setData.template;
-        
-        let setSection = sections.find(s => s.name === 'AI Sets');
-        if (!setSection) {
-            setSection = { id: 'SEC-AI-' + Date.now(), name: 'AI Sets' };
-            sections.push(setSection);
-            localStorage.setItem('sections', JSON.stringify(sections));
-        }
-        
-        const product = {
-            id: 'SET-' + Date.now() + '-' + idx,
-            sectionId: setSection.id,
-            name: template.name + ' (' + data.color + ' Set)',
-            sku: 'SET-' + Date.now().toString().slice(-6) + '-' + idx,
-            color: data.color,
-            size: 'Set',
-            price: setData.setPrice || 499,
-            stock: 1,
-            purchase: 0,
-            isSet: true,
-            templateId: template.id,
-            templateImage: template.image,
-            setDetails: {
-                pieces: template.positions.length,
-                pattern: template.name,
-                description: template.desc,
-                sareeColor: data.color,
-                bangles: setData.selectedBangles.map(b => b.name)
-            }
-        };
-        products.push(product);
-        added++;
-    });
-    
-    localStorage.setItem('products', JSON.stringify(products));
-    localStorage.setItem('sections', JSON.stringify(sections));
-    updateUI();
-    alert('✅ Added ' + added + ' sets to inventory!');
-}
-
-function previewSet(idx) {
-    const data = window._generatedSetsData;
-    if (!data || !data.generatedData || !data.generatedData[idx]) {
-        alert('No set data found!');
-        return;
-    }
-    
-    const setData = data.generatedData[idx];
-    const template = setData.template;
-    
-    alert(
-        '🎨 SET PREVIEW\n' +
-        '━━━━━━━━━━━━━━━━━━━━━━\n' +
-        'Pattern: ' + template.name + '\n' +
-        'Description: ' + (template.desc || 'N/A') + '\n' +
-        'Saree Color: ' + data.color + '\n' +
-        'Pieces: ' + (template.positions.length || 8) + ' bangles\n' +
-        'Price: ₹' + (setData.setPrice || 499) + '\n' +
-        '━━━━━━━━━━━━━━━━━━━━━━\n' +
-        'Bangles in Set:\n' + 
-        setData.selectedBangles.map((b, i) => '  ' + (i+1) + '. ' + b.name + ' (' + b.color + ')').join('\n') + '\n' +
-        '━━━━━━━━━━━━━━━━━━━━━━\n' +
-        '📐 Pattern matches saree color with\n' +
-        'the ' + template.name + ' design pattern.'
-    );
-}
-
-// ==========================================
-// 7. PRODUCTS
+// 4. PRODUCTS
 // ==========================================
 
 function addProduct() {
@@ -771,7 +278,6 @@ function addProduct() {
 function editProduct(id) {
     const p = products.find(pr => pr.id === id);
     if (!p) return;
-    
     const opts = sections.map(s => `<option value="${s.id}" ${s.id===p.sectionId?'selected':''}>${s.name}</option>`).join('');
     
     document.getElementById('modalContent').innerHTML = `
@@ -816,7 +322,7 @@ function saveEdit(id) {
 }
 
 function deleteProduct(id) {
-    if (!confirm('Delete?')) return;
+    if (!confirm('Delete product?')) return;
     products = products.filter(p => p.id !== id);
     localStorage.setItem('products', JSON.stringify(products));
     closeModal();
@@ -824,7 +330,7 @@ function deleteProduct(id) {
 }
 
 // ==========================================
-// 8. BULK
+// 5. BULK ADD
 // ==========================================
 
 function bulkAdd() {
@@ -854,7 +360,335 @@ function bulkAdd() {
 }
 
 // ==========================================
-// 9. INVENTORY - WITH RENAME BUTTON
+// 6. DESIGN TEMPLATES
+// ==========================================
+
+function handleTemplateImage(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        templateImageData = e.target.result;
+        document.getElementById('templateImagePreview').innerHTML = `
+            <div class="image-preview-item">
+                <img src="${e.target.result}" alt="Template">
+                <button class="remove-img" onclick="removeTemplateImage()">✕</button>
+            </div>
+        `;
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeTemplateImage() {
+    templateImageData = null;
+    document.getElementById('templateImagePreview').innerHTML = '';
+    document.getElementById('templateImageInput').value = '';
+}
+
+function saveDesignTemplate() {
+    const name = document.getElementById('templateName').value.trim();
+    const desc = document.getElementById('templateDesc').value.trim();
+    const positionsText = document.getElementById('templatePositions').value.trim();
+    
+    if (!name) { alert('Enter template name'); return; }
+    if (!templateImageData) { alert('Upload template image'); return; }
+    
+    const positions = positionsText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+    if (positions.length === 0) { alert('Enter valid positions'); return; }
+    
+    designTemplates.push({
+        id: 'TMP-' + Date.now(),
+        name, desc: desc || 'Bangle Set Pattern',
+        positions, image: templateImageData
+    });
+    
+    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
+    templateImageData = null;
+    closeModal();
+    renderDesignTemplates();
+    updateTemplateCount();
+    alert('✅ Template "' + name + '" added!');
+}
+
+function editTemplate(id) {
+    openModal('editTemplate', id);
+}
+
+function saveEditTemplate(id) {
+    const template = designTemplates.find(t => t.id === id);
+    if (!template) { alert('Template not found!'); return; }
+    
+    const name = document.getElementById('templateName').value.trim();
+    const desc = document.getElementById('templateDesc').value.trim();
+    const positionsText = document.getElementById('templatePositions').value.trim();
+    
+    if (!name) { alert('Enter template name'); return; }
+    const positions = positionsText.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n) && n > 0);
+    if (positions.length === 0) { alert('Enter valid positions'); return; }
+    
+    template.name = name;
+    template.desc = desc || 'Bangle Set Pattern';
+    template.positions = positions;
+    if (templateImageData) { template.image = templateImageData; templateImageData = null; }
+    
+    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
+    closeModal();
+    renderDesignTemplates();
+    updateTemplateCount();
+    alert('✅ Template updated!');
+}
+
+function deleteTemplate(id) {
+    if (!confirm('Delete template?')) return;
+    designTemplates = designTemplates.filter(t => t.id !== id);
+    localStorage.setItem('designTemplates', JSON.stringify(designTemplates));
+    renderDesignTemplates();
+    updateTemplateCount();
+}
+
+function renderDesignTemplates() {
+    const container = document.getElementById('designTemplates');
+    if (!container) return;
+    updateTemplateCount();
+    
+    if (designTemplates.length === 0) {
+        container.innerHTML = `
+            <div class="empty-templates">
+                <div class="empty-icon">📐</div>
+                <div class="empty-title">No design templates</div>
+                <div class="empty-desc">Add your first design pattern by clicking "+ Add"</div>
+            </div>
+        `;
+        return;
+    }
+    
+    container.innerHTML = designTemplates.map((t) => `
+        <div class="template-card">
+            <div class="template-image"><img src="${t.image}" alt="${t.name}"></div>
+            <div class="template-name">${t.name}</div>
+            <div class="template-desc">${t.desc || ''}</div>
+            <div class="template-position-badge">${t.positions.length} bangles</div>
+            <div class="template-actions">
+                <button class="edit-btn" onclick="editTemplate('${t.id}')">✏️ Edit</button>
+                <button class="delete-btn" onclick="deleteTemplate('${t.id}')">🗑️</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function updateTemplateCount() {
+    const el = document.getElementById('templateCount');
+    if (el) el.textContent = designTemplates.length + ' templates';
+}
+
+function addDesignTemplate() {
+    openModal('addTemplate');
+}
+
+// ==========================================
+// 7. SAREE COLOR
+// ==========================================
+
+function selectSareeColor(color) {
+    selectedSareeColor = color;
+    document.getElementById('selectedSareeColor').textContent = color + ' 🔴';
+    document.querySelectorAll('.saree-color-option').forEach(el => {
+        el.classList.remove('selected');
+        if (el.textContent.includes(color)) el.classList.add('selected');
+    });
+}
+
+// ==========================================
+// 8. AI SET GENERATOR
+// ==========================================
+
+function generateAISets() {
+    const container = document.getElementById('generatedSets');
+    
+    if (!selectedSareeColor) {
+        alert('⚠️ Please select a saree color first!');
+        return;
+    }
+    
+    const matchingProducts = products.filter(p => 
+        p.color && p.color.toLowerCase() === selectedSareeColor.toLowerCase() && p.stock > 0
+    );
+    
+    if (matchingProducts.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center;padding:30px;border:2px solid rgba(239,68,68,0.3)">
+                <div style="font-size:48px;margin-bottom:10px">😅</div>
+                <h4 style="color:#f87171">No matching bangles found!</h4>
+                <p style="color:#6b7280;font-size:13px;margin-top:8px">Color: <strong>${selectedSareeColor}</strong></p>
+            </div>
+        `;
+        return;
+    }
+    
+    if (designTemplates.length === 0) {
+        container.innerHTML = `
+            <div class="card" style="text-align:center;padding:30px;border:2px solid rgba(239,68,68,0.3)">
+                <div style="font-size:48px;margin-bottom:10px">📐</div>
+                <h4 style="color:#f87171">No design templates found!</h4>
+                <p style="color:#6b7280;font-size:13px;margin-top:8px">Please add design templates first.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let setsHtml = '';
+    let setCount = 0;
+    let generatedData = [];
+    
+    designTemplates.forEach((template, idx) => {
+        const totalStock = matchingProducts.reduce((sum, p) => sum + p.stock, 0);
+        const piecesPerSet = template.positions.length || 8;
+        const maxSets = Math.floor(totalStock / piecesPerSet);
+        if (maxSets < 1) return;
+        setCount++;
+        
+        const selectedBangles = [];
+        let stockCopy = matchingProducts.map(p => ({...p}));
+        for (let i = 0; i < piecesPerSet; i++) {
+            const available = stockCopy.filter(p => p.stock > 0);
+            if (available.length === 0) break;
+            const pick = available[Math.floor(Math.random() * available.length)];
+            const idx2 = stockCopy.indexOf(pick);
+            if (idx2 > -1) { stockCopy[idx2].stock--; selectedBangles.push(pick); }
+        }
+        if (selectedBangles.length < 2) return;
+        
+        const setPrice = selectedBangles.reduce((sum, b) => sum + (b.price || 0), 0) + 100;
+        generatedData.push({ template, selectedBangles, maxSets, setPrice });
+        
+        setsHtml += `
+            <div class="set-result-card">
+                <div class="set-result-header">
+                    <span class="set-result-name">🎨 ${template.name} - ${selectedSareeColor} Collection</span>
+                    <span class="set-result-badge">${maxSets} sets</span>
+                </div>
+                <div class="set-result-preview">
+                    ${selectedBangles.map((b, i) => `
+                        <div class="bangle-item" style="background:${getColorHex(b.color)}">
+                            <span style="font-size:14px;color:#fff;font-weight:700">${i+1}</span>
+                            <div class="bangle-label">${b.name}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div style="margin:8px 0;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;font-size:12px;color:#6b7280;text-align:center">
+                    ${template.desc} • ${selectedBangles.length} pieces
+                </div>
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">
+                    <div>
+                        <div style="font-size:12px;color:#6b7280">Set Price</div>
+                        <div style="font-size:20px;font-weight:800;color:#818cf8">₹${setPrice}</div>
+                    </div>
+                    <div style="display:flex;gap:8px">
+                        <button onclick="previewSet(${idx})" class="btn-secondary" style="padding:8px 16px;font-size:12px">👁️ Preview</button>
+                        <button onclick="addSetToInventory(${idx})" class="btn-add-set">➕ Add Set</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    if (setCount === 0) {
+        container.innerHTML = `<div class="card" style="text-align:center;padding:30px"><h4 style="color:#f87171">Not enough stock!</h4></div>`;
+        return;
+    }
+    
+    container.innerHTML = `
+        <div style="margin:15px 0 10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
+            <span style="font-size:14px;color:#6b7280">🎯 Found ${setCount} matching sets</span>
+            <button onclick="addAllSets()" class="btn-success" style="padding:8px 20px;font-size:13px;width:auto">📦 Add All Sets</button>
+        </div>
+        ${setsHtml}
+    `;
+    
+    window._generatedData = { templates: designTemplates, color: selectedSareeColor, generatedData };
+}
+
+function getColorHex(color) {
+    const map = { 'Red':'#ef4444','Blue':'#3b82f6','Gold':'#f59e0b','Green':'#22c55e','Silver':'#9ca3af','Pink':'#ec4899','Purple':'#8b5cf6','Orange':'#f97316' };
+    return map[color] || '#6b7280';
+}
+
+function addSetToInventory(idx) {
+    const data = window._generatedData;
+    if (!data || !data.generatedData || !data.generatedData[idx]) { alert('Generate sets first!'); return; }
+    const setData = data.generatedData[idx];
+    const template = setData.template;
+    
+    let setSection = sections.find(s => s.name === 'AI Sets');
+    if (!setSection) { setSection = { id: 'SEC-AI-' + Date.now(), name: 'AI Sets' }; sections.push(setSection); localStorage.setItem('sections', JSON.stringify(sections)); }
+    
+    products.push({
+        id: 'SET-' + Date.now(),
+        sectionId: setSection.id,
+        name: template.name + ' (' + data.color + ' Set)',
+        sku: 'SET-' + Date.now().toString().slice(-6),
+        color: data.color,
+        size: 'Set',
+        price: setData.setPrice || 499,
+        stock: 1,
+        purchase: 0,
+        isSet: true,
+        templateId: template.id,
+        templateImage: template.image
+    });
+    
+    localStorage.setItem('products', JSON.stringify(products));
+    updateUI();
+    alert('✅ Set added to inventory!');
+}
+
+function addAllSets() {
+    const data = window._generatedData;
+    if (!data || !data.generatedData) { alert('Generate sets first!'); return; }
+    let added = 0;
+    data.generatedData.forEach((setData) => {
+        const template = setData.template;
+        let setSection = sections.find(s => s.name === 'AI Sets');
+        if (!setSection) { setSection = { id: 'SEC-AI-' + Date.now(), name: 'AI Sets' }; sections.push(setSection); localStorage.setItem('sections', JSON.stringify(sections)); }
+        products.push({
+            id: 'SET-' + Date.now() + '-' + added,
+            sectionId: setSection.id,
+            name: template.name + ' (' + data.color + ' Set)',
+            sku: 'SET-' + Date.now().toString().slice(-6) + '-' + added,
+            color: data.color,
+            size: 'Set',
+            price: setData.setPrice || 499,
+            stock: 1,
+            purchase: 0,
+            isSet: true,
+            templateId: template.id,
+            templateImage: template.image
+        });
+        added++;
+    });
+    localStorage.setItem('products', JSON.stringify(products));
+    updateUI();
+    alert('✅ Added ' + added + ' sets to inventory!');
+}
+
+function previewSet(idx) {
+    const data = window._generatedData;
+    if (!data || !data.generatedData || !data.generatedData[idx]) { alert('No set data!'); return; }
+    const setData = data.generatedData[idx];
+    alert(
+        '🎨 SET PREVIEW\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━\n' +
+        'Pattern: ' + setData.template.name + '\n' +
+        'Saree Color: ' + data.color + '\n' +
+        'Pieces: ' + setData.selectedBangles.length + ' bangles\n' +
+        'Price: ₹' + setData.setPrice + '\n' +
+        '━━━━━━━━━━━━━━━━━━━━━━\n' +
+        setData.selectedBangles.map((b, i) => (i+1) + '. ' + b.name + ' (' + b.color + ')').join('\n')
+    );
+}
+
+// ==========================================
+// 9. INVENTORY RENDER
 // ==========================================
 
 function renderInventory() {
@@ -884,54 +718,13 @@ function renderInventory() {
     sections.forEach(section => {
         const sp = filtered.filter(p => p.sectionId === section.id);
         if (sp.length === 0 && !filterSection && !search && !filterColor) {
-            html += `
-                <div class="section-card">
-                    <div class="section-header">
-                        <span class="section-name">📁 ${section.name}</span>
-                        <div style="display:flex;align-items:center;gap:10px">
-                            <span class="section-count">0</span>
-                            <div class="section-header-actions">
-                                <button class="rename-btn" onclick="openRenameSection('${section.id}')" title="Rename Section">✏️</button>
-                                <button class="delete-btn" onclick="deleteSection('${section.id}')" title="Delete Section">🗑️</button>
-                            </div>
-                        </div>
-                    </div>
-                    <div style="padding:16px;text-align:center;color:#6b7280;font-size:13px">No products in this section</div>
-                </div>
-            `;
+            html += `<div class="section-card"><div class="section-header"><span class="section-name">📁 ${section.name}</span><div style="display:flex;align-items:center;gap:10px"><span class="section-count">0</span><div class="section-header-actions"><button class="rename-btn" onclick="openRenameSection('${section.id}')">✏️</button><button class="delete-btn" onclick="deleteSection('${section.id}')">🗑️</button></div></div></div><div style="padding:16px;text-align:center;color:#6b7280;font-size:13px">No products</div></div>`;
             return;
         }
         if (sp.length === 0) return;
-        
-        html += `
-            <div class="section-card">
-                <div class="section-header">
-                    <span class="section-name" onclick="openRenameSection('${section.id}')" title="Click to rename">📁 ${section.name}</span>
-                    <div style="display:flex;align-items:center;gap:10px">
-                        <span class="section-count">${sp.length}</span>
-                        <div class="section-header-actions">
-                            <button class="rename-btn" onclick="openRenameSection('${section.id}')" title="Rename Section">✏️</button>
-                            <button class="delete-btn" onclick="deleteSection('${section.id}')" title="Delete Section">🗑️</button>
-                        </div>
-                    </div>
-                </div>
-                <div class="section-products">
-                    ${sp.map(p => `
-                        <div class="product-item">
-                            <div class="product-info">
-                                <div class="product-name">${p.name}</div>
-                                <div class="product-sku">SKU: ${p.sku} ${p.color ? '• '+p.color : ''} ${p.size ? '• '+p.size : ''}</div>
-                            </div>
-                            <div class="product-right">
-                                <div class="product-price">₹${p.price||0}</div>
-                                <span class="product-stock-badge ${(p.stock||0)<5?'badge-low':'badge-good'}">${p.stock||0}</span>
-                                <button onclick="editProduct('${p.id}')" class="product-edit-btn">✏️</button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
+        html += `<div class="section-card"><div class="section-header"><span class="section-name">📁 ${section.name}</span><div style="display:flex;align-items:center;gap:10px"><span class="section-count">${sp.length}</span><div class="section-header-actions"><button class="rename-btn" onclick="openRenameSection('${section.id}')">✏️</button><button class="delete-btn" onclick="deleteSection('${section.id}')">🗑️</button></div></div></div><div class="section-products">${sp.map(p => `
+            <div class="product-item"><div class="product-info"><div class="product-name">${p.name}</div><div class="product-sku">SKU: ${p.sku} ${p.color ? '• '+p.color : ''} ${p.size ? '• '+p.size : ''}</div></div><div class="product-right"><div class="product-price">₹${p.price||0}</div><span class="product-stock-badge ${(p.stock||0)<5?'badge-low':'badge-good'}">${p.stock||0}</span><button onclick="editProduct('${p.id}')" class="product-edit-btn">✏️</button></div></div>
+        `).join('')}</div></div>`;
     });
     c.innerHTML = html || '<p style="color:#6b7280;text-align:center;padding:30px">No products</p>';
 }
@@ -1112,17 +905,7 @@ function clearAllData() {
 }
 
 function aboutApp() {
-    alert(
-        '📱 Smart Inventory v2.0\n' +
-        '━━━━━━━━━━━━━━━━━━━━━━\n' +
-        '✅ Sections: Add / Rename / Delete\n' +
-        '✅ Products: Add / Edit / Delete\n' +
-        '✅ Design Templates: Add / Edit / Delete\n' +
-        '✅ Saree Color Matching\n' +
-        '✅ AI Set Generation\n' +
-        '━━━━━━━━━━━━━━━━━━━━━━\n' +
-        '🎯 Complete Management System!'
-    );
+    alert('📱 Smart Inventory v2.0\n━━━━━━━━━━━━━━━━\n✅ Sections: Add/Rename/Delete\n✅ Products: Add/Edit/Delete\n✅ Design Templates: Add/Edit/Delete\n✅ AI Set Maker with Saree Matching\n✅ Billing System\n✅ 100% Real');
 }
 
 // ==========================================
@@ -1138,7 +921,7 @@ document.addEventListener('DOMContentLoaded', function() {
 updateUI();
 renderDesignTemplates();
 updateTemplateCount();
-console.log('✅ Smart Inventory v2.0 - Complete Management Loaded!');
-console.log('📐 Design Templates:', designTemplates.length);
+console.log('✅ Smart Inventory Loaded!');
+console.log('📐 Templates:', designTemplates.length);
 console.log('📦 Products:', products.length);
 console.log('📂 Sections:', sections.length);

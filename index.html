@@ -1,0 +1,34 @@
+    <!-- ===== INVENTORY ===== -->
+    <div id="inventoryPage" class="page">
+        <div class="container">
+            <div class="page-header">
+                <h2 class="page-title">📦 Inventory</h2>
+                <div class="header-buttons">
+                    <button onclick="openModal('addSection')" class="btn-secondary">📁 +</button>
+                    <button onclick="openModal('addProduct')" class="btn-primary">+ Add</button>
+                </div>
+            </div>
+
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input id="searchInput" placeholder="Search products..." class="search-input">
+            </div>
+
+            <div class="filter-row">
+                <select id="filterSection" class="filter-select">
+                    <option value="">All Sections</option>
+                </select>
+                <select id="filterColor" class="filter-select">
+                    <option value="">All Colors</option>
+                    <option value="Red">🔴 Red</option>
+                    <option value="Blue">🔵 Blue</option>
+                    <option value="Gold">🟡 Gold</option>
+                    <option value="Green">🟢 Green</option>
+                    <option value="Silver">⚪ Silver</option>
+                    <option value="Pink">🩷 Pink</option>
+                </select>
+            </div>
+
+            <div id="inventorySections"></div>
+        </div>
+    </div>
